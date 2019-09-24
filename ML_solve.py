@@ -173,12 +173,8 @@ class PadAgent:
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
         model = keras.models.Sequential()
-        model.add(keras.layers.Conv2D(32, kernel_size=3, activation='relu', input_shape=(self.height, self.width, self.model_layer_count)))
-        model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
-        model.add(keras.layers.Conv2D(64, kernel_size=3, activation='relu'))
-        model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
+        model.add(keras.layers.Conv2D(128, kernel_size=3, activation='relu', input_shape=(self.height, self.width, self.model_layer_count)))
         model.add(keras.layers.Conv2D(128, kernel_size=3, activation='relu'))
-        model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
         model.add(keras.layers.Flatten())
         model.add(keras.layers.Dense(self.action_size, activation='linear'))
         model.compile(loss='mse',
