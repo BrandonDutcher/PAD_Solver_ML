@@ -1,6 +1,7 @@
 #python
 
 import keras
+import oneBoardSolve
 from keras import backend as K
 import numpy as np
 import random
@@ -28,6 +29,7 @@ class DungeonSimulator:
         self.orb_count = orb_count  # how many different types of orbs there are
         self.loc = loc  # location of the starting orb that is picked up
         self.dirarray4 = np.array([[0,1],[1,0],[0,-1],[-1,0]])
+        self.dirarray8 = np.array([[0,1],[1,1],[1,0],[1,-1],[0,-1],[-1,-1],[-1,0],[-1,1]])
         self.action_index = 0
         self.action_array = [0]*100
         self.reset() #generates a random board to start
@@ -41,11 +43,10 @@ class DungeonSimulator:
         return self.state
 
     def take_action(self, action):
-        dirarray8 = np.array([[0,1],[1,1],[1,0],[1,-1],[0,-1],[-1,-1],[-1,0],[-1,1]])
         oldloc = self.state[0]
         board = self.state[1]
         oldval = board[oldloc[0],oldloc[1]]
-        newloc = oldloc + dirarray8[action]
+        newloc = oldloc + self.dirarray8[action]
         match_count_0 = self.reward_state()
         if newloc[0] >= self.height or newloc[1] >= self.width or newloc[0] < 0 or newloc[1] < 0:
             return self.state, -0.1
@@ -221,6 +222,8 @@ class PadAgent:
 
 #----------------------------------------------------------------------------------------------------------------
 
+
+
 def run_sim():
     env = DungeonSimulator()
     
@@ -261,10 +264,12 @@ if __name__ == "__main__":
             tot_reward = 0
             old_action = -1
             env.reset()
+            state = env.state
             if e%10000 == 0:
                 agent.model.save_weights('PAD_weights.h5')
                 with open('PAD_architecture.json', 'w') as f:
                     f.write(agent.model.to_json())
+            '''
             for time_t in range(100):
                 action = agent.act(state, env.get_valid_actions(old_action))
                 old_action = action
@@ -276,6 +281,32 @@ if __name__ == "__main__":
                 agent.remember(state, action, reward, next_state, done)
                 # make next_state the new current state for the next frame.
                 state = next_state
+            '''
+            while True:
+                try:
+                    moves = np.array(oneBoardSolve.solveBoard(boardGiven = env.state[1]+1, outputMoves=True))
+                    break
+                except KeyboardInterrupt:
+                    break
+                except:
+                    pass
+
+            actions = []
+            for i in range(len(moves)-1):
+                done = i==len(moves)-2
+                di = moves[i+1]-moves[i]
+                for j,d in enumerate(env.dirarray8):
+                    out = d==di
+                    if out.all():
+                        action = j
+                        next_state, reward = env.take_action(action)
+                        tot_reward += reward
+                        #print(reward, end='')
+                        agent.remember(state, action, reward, next_state, done)
+                        # make next_state the new current state for the next frame.
+                        state = next_state
+                        #env.format_state(state, reward, tot_reward)
+
             print("episode: {}/{}, score: {:>4}, epsilon: {:>.4f}".format(e, episodes, tot_reward, agent.epsilon))
             agent.replay(16)
     except KeyboardInterrupt:
